@@ -1,0 +1,11 @@
+{
+  "name": "arguments",
+  "version": "1.0.0",
+  "description": "An example CLI application made with greytape.js",
+  "main": "index.js",
+  "bin": {
+    "arguments": "index.js"
+  },
+  "author": "Damien BUTY",
+  "license": "MIT"
+}
