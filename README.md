@@ -130,7 +130,7 @@ Greytape gives you the possibility to execute commands directly inside docker co
 ```javascript
 // index.js
 greytape({
-	data: {
+    data: {
       migrate: {
         hint: 'Executes the Sequelize migrations',
         inContainer: 'internal_api_container_1',
@@ -151,19 +151,20 @@ The following instructions work as expected :
 
 ```javascript
 greytape({
-	ssh: {
+    ssh: {
     	production: {
-        	hint: 'SSH into the production server',
+            hint: 'SSH into the production server',
             commands: 'ssh -i ~/.ssh/id_rsa root@prod.server.co'
         },
         dev: {
-        	hint: 'SSH into the development container',
-            commands: 'docker exec -it internal_api_container_1 /bin/bash'
+            hint: 'SSH into the development container',
+            inContainer: 'internal_api_container_1',
+            commands: '/bin/bash'
         }
     },
     data: {
     	explore: {
-        	hint: 'Log inside PSQL in the db container',
+            hint: 'Log inside PSQL in the db container',
             inContainer: 'db_container_1',
             commands: 'su postgres -c psql -d my_database'
         }
