@@ -35,8 +35,8 @@ Here's an example of a simple runtime :
 const greytape = require('greytape')
 
 greytape({
-	// The first level is a domain
-	internalApi: {
+    // The first level is a domain
+    internalApi: {
     	// All items on the second level are commands
     	start: {
         	hint: 'Starts the API\'s Docker container',
