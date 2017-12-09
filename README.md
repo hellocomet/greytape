@@ -69,7 +69,7 @@ A command should have at minimum a hint (used for the help section of your appli
 
 ### The __core domain
 
-The `__core` domain is a reserved domain, that contains the "root" commands of your application. These commands can be reached directly without specifying a domain.
+The `__core` domain is a reserved domain, that contains the "root" commands of your application. These commands can be reached directly without a prefix.
 
 For example the following runtime:
 

@@ -41,56 +41,52 @@ const parserFactory = runtimes => {
         process.exit(1)
       }
     }
-    
+
     // Create defaults object
-    const defaults = Object.assign({}, runtime.defaults || {})
-    let options
-    
-    // Turn the options array into a { key: value } object with the defaults applied
-    if (runtime.options) {
-      options = Object.assign(
-        {},
-        defaults,
-        runtime.options.reduce((acc, option, idx) => {
+    const defaults = runtime.defaults || {}
+
+    // If the runtime doesn't specify options, we just pass the defaults if any
+    // Otherwise we map the user's input to a { key: value } object
+    const options = !runtime.options
+      ? defaults
+      : {
+        ...defaults,
+        ...runtime.options.reduce((acc, option, idx) => {
           if (args[idx]) {
             acc[option] = args[idx]
           }
           return acc
         }, {})
-      )
-    } else {
-      options = defaults
-    }
-    
-    // If an arguments mapper is provided, map the arguments
-    let mappedArguments = {}
-    if (runtime.argumentsMap) {
-      try {
-        mappedArguments = runtime.argumentsMap(options)
-      } catch(e) {
-        console.error("Arguments could not be interpreted : ")
-        console.error(e)
-        process.exit(1)
       }
+
+    // If an arguments mapper is provided, map the arguments
+    // Otherwise just pass the options
+    try {
+      const mappedArguments = !runtime.argumentsMap
+        ? options
+        : runtime.argumentsMap(options)
+
+      let { commands } = runtime
+
+      // Commands can be a string, an array of strings or a function
+      // If it's a function, we execute it with the mapped arguments
+      if (typeof commands === 'function' || commands instanceof Function) {
+        commands = commands(mappedArguments)
+      }
+
+      // If commands is not an array at this point, turn it into one
+      commands = Array.isArray(commands) ? commands : [commands]
+
+      if (runtime.inContainer) {
+        const container = runtime.inContainer
+        commands = commands.map(command => `docker exec -it ${container} /bin/bash -c ${command}`)
+      }
+
+      return commands
+    } catch(e) {
+      console.error(`Arguments could not be interpreted : ${e}`)
+      process.exit(1)
     }
-
-    let { commands } = runtime
-
-    // Commands can be a string, an array of strings or a function
-    // If it's a function, we execute it with the mapped arguments
-    if (typeof commands === 'function' || commands instanceof Function) {
-      commands = commands(mappedArguments)
-    }
-    
-    // If commands is not an array at this point, turn it into one
-    commands = Array.isArray(commands) ? commands : [commands]
-
-    if (runtime.inContainer) {
-      const container = runtime.inContainer
-      commands = commands.map(command => `docker exec -it ${container} /bin/bash -c ${command}`)
-    }
-
-    return commands
   }
 
   return parser
