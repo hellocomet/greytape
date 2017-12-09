@@ -1,6 +1,6 @@
 # Greytape
 
-Greytape is a Node.js library to create simple command line tools from shell commands. The original use case was to create helpers for development environments with Docker containers, but really anything that can be done in a shell can be integrated in a greytape command.
+Greytape is a [Node.js](https://nodejs.org) library to create custom command line tools from shell commands. The original use case was to create helpers for a Docker development environment, but really anything that can be done in a shell can be integrated as a greytape command.
 
 ## Installation
 
@@ -16,224 +16,179 @@ npm install --save greytape
 const greytape = require('greytape')
 ```
 
-## Usage
+## Basic usage
 
-To create a command line tool, simply initialize Greytape with a valid `runtime`. A runtime describes a list of domains and commands, which are mapped to shell commands. The resulting CLI application will be used with the following pattern :
-
-```
-$ # <bin>      <domain>     <command>     <args>
-$ my_cli_tool  some_domain  some_command  --some arguments with --or -without-dashes
+At its simplest, greytape allows you to map your tool's commands to actual shell commands. Let's say you want to create an application named `cli` to manage your docker containers. `cli` could be used like this :
 
 ```
-
-### Basic example
-
-Here's an example of a simple runtime :
+# cli up
+// executes docker-compose up
+# cli down
+// docker-compose down
+# cli api ssh
+// ssh into the api container
+# cli frontend build
+// builds the frontend
+```
+With greytape, this would look like :
 
 ```javascript
-// index.js
 const greytape = require('greytape')
 
+// The configuration is passed as an object to greytape
 greytape({
-    // The first level is a domain
-    internalApi: {
-    	// All items on the second level are commands
-    	start: {
-        	hint: 'Starts the API\'s Docker container',
-            commands: 'docker start internal_api_container_1'
-        },
-        stop: {
-        	hint: 'Stops the API\'s Docker container',
-            commands: 'docker stop internal_api_container_1'
-        },
-        restart: {        
-        	hint: 'Restarts the API\'s Docker container',
-            commands: [
-            	'docker stop internal_api_container_1',
-                'docker start internal_api_container_1'
-            ]
-        }
-    }	
-})
-```
-
-It exposes one domain `internalApi` with 3 commands `start`, `stop` and `restart` :
-
-```
-$ node index.js internalApi start
-$ node index.js internalApi stop
-$ node index.js internalApi restart
-```
-
-A command should have at minimum a hint (used for the help section of your application), and a command. Note that the `commands` property can contain a String or an Array of Strings. If it is an array, the commands are executed one after the other.
-
-### The __core domain
-
-The `__core` domain is a reserved domain, that contains the "root" commands of your application. These commands can be reached directly without a prefix.
-
-For example the following runtime:
-
-```javascript
-// index.js
-greytape({
+  // The __core block contains the commands that don't have a prefix
   __core: {
-    logs: {
-      hint: 'Get the application logs',
-      commands: 'docker logs internal_api_container_1 -f'
-    }
+    up: { commands: 'docker-compose up' },
+    down: { commands: 'docker-compose down' },
+  },
+  // The api prefix
+  api: {
+    ssh: { commands: 'docker exec -it api_container /bin/bash' }
+  },
+  // The frontend prefix
+  frontend: {
+  	// commands can be supplied as an array, they are executed sequentially and synchronously
+    build: { commands: ['cd ./frontend', 'npm run build'] }
   }
 })
 ```
-
-will be used like this : `node index.js logs`
 
 ## Advanced usage
 
 ### Arguments management
 
-Greytape allows you to add arguments to a command, to specify defaults for these arguments, and to manipulate these arguments before they are passed to the shell commands.
+Greytape commands can handle arguments. You can specify defaults, and even manipulate the arguments before they are sent to the shell commands.
 
-This is done using three additional blocks: `options`, `defaults` and `argumentsMap`. Consider the following command, which allows to ssh inside a chosen docker container :
-
-```javascript
-ssh: {
-  hint: 'SSH into container (default: api)',
-  // Options is an array of strings, containing the list of possible arguments
-  options: [ 'container' ],
-  // It is turned into a { key: value } object, and populated first with the defaults,
-  // then with the input from the user
-  defaults: { container: 'api' },
-  // It is then passed to argumentsMap, where we can manipulate it as we see fit
-  // in this example, we turn the easily remembered "api" and "frontend" arguments
-  // into actual container names
-  argumentsMap: (arguments) => {
-  	if (arguments.container === 'api') {
-    	return { container: 'internal_api_container_1' }
-    }
-    else if (arguments.container === 'frontend') {
-    	return { container: 'frontend_container_1' }
-    }
-    // The arguments mapper has the option to throw an error if the arguments provided are invalid
-    else { throw "Invalid parameter <container>" }
-  },
-  // The result of argumentsMap is then passed to the function that creates the shell command
-  commands: (mappedArguments) => `docker exec -it ${mappedArguments.container} /bin/bash`
-}
-```
-
-Note that in this case, commands is a function. It is called with the result of argumentsMap, and can return either a String or an Array of Strings.
-
-### Executing commands inside containers
-
-Greytape gives you the possibility to execute commands directly inside docker containers. For this, you only need to set the option `inContainer` on the command :
+At minimum, you need to provide :
+- `options` : an array of parameter names
+- `commands` : instead of a string or array of strings, `commands` can be a function. It will be executed with the options provided by the user, and must return a string or an array of strings.
 
 ```javascript
-// index.js
 greytape({
+  __core: {
     data: {
-      migrate: {
-        hint: 'Executes the Sequelize migrations',
-        inContainer: 'internal_api_container_1',
-        commands: 'cd api && npm run migrate'
-      }
+      options: ['database'],
+      commands: options => `psql -d ${options.database}`
     }
+  },
 })
 
 ```
 
-The command will be wrapped with `docker exec -it <container_name> <provided_command>`
+See [the API reference](API.md#arguments-management) for advanced instructions.
 
 ### Taking the user to a different shell
 
-All executed commands inherit stdio from the node process, which means that you can take your user to a different shell (SSHing into a server, into a docker container, or a command line REPL like psql).
+Because greytape pipes stdin & stdout to the commands, you can take the user to a different shell, for example by connecting to a server with `ssh`, or by using any REPL like `node` or `psql` (see [previous example](#arguments-management)).
 
-The following instructions work as expected :
+Doing this blocks the execution, so if you have provided an array of commands the next one won't execute until this process ends (for example when the user quits the shell).
+
+### Executing commands in containers
+
+For each greytape command, you can specify a Docker container name with the `inContainer` option. The command is executed inside the container by wrapping it with `docker exec -it <container> /bin/bash -c <command>`.
 
 ```javascript
 greytape({
-    ssh: {
-    	production: {
-            hint: 'SSH into the production server',
-            commands: 'ssh -i ~/.ssh/id_rsa root@prod.server.co'
-        },
-        dev: {
-            hint: 'SSH into the development container',
-            inContainer: 'internal_api_container_1',
-            commands: '/bin/bash'
-        }
-    },
-    data: {
-    	explore: {
-            hint: 'Log inside PSQL in the db container',
-            inContainer: 'db_container_1',
-            commands: 'su postgres -c psql -d my_database'
-        }
+  data: {
+    explore: {
+      inContainer: 'db_container_1',
+      commands: 'psql -d apidata'
     }
+  }
 })
 ```
+
+### Configuration management
+
+For the moment, the only configuration option available is `cwd`, which indicates the directory in which all commands will be executed. (Don't hesitate and just [raise an issue](https://github.com/hellocomet/greytape/issues) if you need other configuration options :) )
+
+Greytape handles the configuration with a dotfile, located in your home folder, and named after the `__root` of your application (in our example, `~/.cli.json`). See [the API reference](API.md#__cwd) for more details.
+
 
 ## Self-documentation
 
-Thanks to the hints you provided, your application is capable of self-documenting. The documentation can be accessed either by calling the application without arguments, or by calling it with `help`, `--help` or `-h`.
+Greytape can generate the documentation of your application if you provide a `__root` option, indicating the name of the application, and if your commands have hints indicating what they do.
 
-The only additional configuration needed is the `__root` key, to indicate the name of your application.
-
-For example, this runtime :
+Let's add some documentation to our `cli` application :
 
 ```javascript
-// index.js
+const greytape = require('greytape')
+
 greytape({
-  __root: 'simplejack',
+  // The application's name
+  __root: 'cli',
   __core: {
-    logs: {
-      hint: 'Get the application logs',
-      commands: 'docker logs internal_api_container_1 -f'
+    up: {
+      // The hint for the up command
+      hint: 'Starts the containers',
+      commands: 'docker-compose up'
     },
-    ssh: {
-      hint: 'SSH into container (default: api)',
-      options: [ 'container' ],
-      defaults: { container: 'api' },
-      argumentsMap: (arguments) => {
-        if (arguments.container === 'api') {
-            return { container: 'internal_api_container_1' }
-        }
-        else if (arguments.container === 'frontend') {
-            return { container: 'frontend_container_1' }
-        }
-        else { throw "Invalid parameter <container>" }
-      },
-      commands: (mappedArguments) => `docker exec -it ${mappedArguments.container} /bin/bash`
+    down: {
+      hint: 'Stops the containers',
+      commands: 'docker-compose down'
     },
+    data: {
+      hint: "Connect to a database",
+      options: ['database'],
+      commands: options => `psql -d ${options.database}`
+    }
   },
-  internalApi: {
-    start: {
-        hint: 'Starts the API\'s Docker container',
-        commands: 'docker start internal_api_container_1'
-      },
-      stop: {
-        hint: 'Stops the API\'s Docker container',
-        commands: 'docker stop internal_api_container_1'
-      },
-      restart: {        
-        hint: 'Restarts the API\'s Docker container',
-          commands: [
-            'docker stop internal_api_container_1',
-            'docker start internal_api_container_1'
-          ]
-      }
-  }	
+  // The api prefix
+  api: {
+    ssh: {
+      hint: 'SSH into the API container',
+      commands: 'docker exec -it api_container /bin/bash'
+    }
+  }
+  // The frontend prefix
+  frontend: {
+    build: {
+      hint: 'Build the frontend with webpack',
+      commands: ['cd ./frontend', 'npm run build']
+    }
+  }
 })
 ```
 
-will produce this documentation :
+The documentation can be accessed by calling `cli` with no arguments, or with `-h`, `--help` or `help`.
 
 ```
-$ node index.js -h
+# cli -h
 - Core commands
-simpleJack logs : Get the application logs
-simpleJack ssh [container] : SSH into container (default: api)
-- internalApi commands
-simpleJack internalApi start : Starts the API's Docker container
-simpleJack internalApi stop : Stops the API's Docker container
-simpleJack internalApi restart : Restarts the API's Docker container
+cli up : Starts the containers
+cli down : Stops the containers
+cli data [database] : Connect to a database
+- api commands
+cli api ssh : SSH into the API container
+- frontend commands
+cli frontend build : Build the frontend with webpack
 ```
+
+## Installing your application
+
+You can call a greytape application with `node cli.js command arguments` but in most cases you will want your application to be installed globally.
+
+You simply need to add a `bin` section to your `package.json`, specifying the binary's name and the js file that should be executed :
+
+```json
+{
+  "name": "cli",
+  "version": "1.0.0",
+  "description": "An example CLI application made with greytape.js",
+  "bin": {
+    "cli": "index.js"
+  },
+  "author": "Damien BUTY",
+  "license": "MIT",
+  "dependencies": {
+    "greytape": "^0.5.0"
+  }
+}
+```
+
+Then go to your application's folder and `npm install -g` (you will probably need `sudo` privileges).
+
+This makes the application accessible from anywhere in your system by creating a symlink in a folder of your PATH (in general `/usr/bin`).
+
+

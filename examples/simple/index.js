@@ -1,55 +1,21 @@
 #!/usr/bin/env node
 
-const greytape = require('../../src')
+const greytape = require('greytape')
 
+// The configuration is passed as an object to greytape
 greytape({
-  __root: 'simpleJack',
-  __cwd: 'DOTFILE',
+  // The __core block contains the commands that don't have a prefix
   __core: {
-    logs: {
-      hint: 'Get the application logs',
-      commands: 'docker logs internal_api_container_1 -f'
-    },
-    ssh: {
-      options: ['user', 'server'],
-      defaults: {
-        user: 'root',
-        server: 'production'
-      },
-      argumentsMap: ({ user, server }) => {
-        if (server === 'production') {
-          return {
-            user,
-            server: 'prod.boring.url.eu-frankfurt-1.cloud.co'
-          }
-        }
-        else if (server === 'staging') {
-          return {
-            user,
-            server: 'staging.boring.url.eu-frankfurt-1.cloud.co'
-          }
-        }
-        
-		    throw `Unrecognized server '${server}'`
-      },
-      commands: ({ user, server }) => `echo ${user}@${server}`
-    }
+    up: { commands: 'docker-compose up' },
+    down: { commands: 'docker-compose down' },
   },
-	internalApi: {
-    start: {
-        hint: 'Starts the API\'s Docker container',
-        commands: 'docker start internal_api_container_1'
-      },
-      stop: {
-        hint: 'Stops the API\'s Docker container',
-        commands: 'docker stop internal_api_container_1'
-      },
-      restart: {        
-        hint: 'Restarts the API\'s Docker container',
-        commands: [
-          'docker stop internal_api_container_1',
-          'docker start internal_api_container_1'
-        ]
-      }
-  }	
+  // The api prefix
+  api: {
+    ssh: { commands: 'docker exec -it api_container /bin/bash' }
+  },
+  // The frontend prefix
+  frontend: {
+  	// commands can be supplied as an array, they are executed sequentially and synchronously
+    build: { commands: ['cd ./frontend', 'npm run build'] }
+  }
 })

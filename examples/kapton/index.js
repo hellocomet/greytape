@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 const config = require('./config')
-const runtimes = require('./runtimes')(config)
+const commands = require('./commands')(config)
 
-const greytape = require('../../src')
+const greytape = require('greytape')
 
-greytape(runtimes)
+greytape(commands)

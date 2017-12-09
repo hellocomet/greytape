@@ -75,7 +75,7 @@ If `commands` is a function, it is called with one parameter, the result of `arg
 ```javascript
 greytape({
   __core: {
-  	aString: {
+    aString: {
       commands: 'cd .. && ls'
     },
     anArray: {
@@ -166,7 +166,7 @@ greytape({
 The user provided parameters are taken in the order of the array, and mapped to a `{ key: value }` object. In this example, the `['user', 'server']` array maps to `{ user: '<user input>', server: '<user input>' }`.
 
 ```
-#                   |user| |server |
+#                    |user| |server |
 # node index.js hack  root   nsa.gov
 {
   user: "root",
