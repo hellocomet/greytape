@@ -56,6 +56,8 @@ greytape({
 
 ## Advanced usage
 
+(See [API Reference](API.md) for complete instructions)
+
 ### Arguments management
 
 Greytape commands can handle arguments. You can specify defaults, and even manipulate the arguments before they are sent to the shell commands.
