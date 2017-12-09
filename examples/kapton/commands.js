@@ -23,7 +23,7 @@ const factory = config => ({
     },
     restart: {
       hint: 'Stop the docker-compose cluster',
-      commands: 'docker-compose down'
+      commands: 'docker-compose down && docker-compose up -d'
     },
     logs: {
       hint: 'Displays logs for [container] (default : api). "-f" to follow.',

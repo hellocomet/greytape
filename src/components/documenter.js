@@ -11,7 +11,7 @@ const document = runtimes => {
           : ""
         const hint = runtime.alias
           ? `(alias de ${runtime.alias.split(":")[1]})`
-          : runtime.hint
+          : runtime.hint || "No documentation available"
   
         const executable = domain
           ? `${__root} ${domain}`
