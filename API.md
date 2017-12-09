@@ -22,7 +22,7 @@ _String_
 
 The name of your CLI application. It is used to generate the documentation & the name of the config file.
 
-#### ___cwd
+#### __cwd
 
 _String_
 
