@@ -20,33 +20,8 @@ const greytape = async runtimes => {
     documenter(runtimes)
   }
   else {
-    let cwd;
-
-    if (runtimes.__cwd) {
-      if (runtimes.__cwd === 'DOTFILE') {
-        const dotFile = `${os.homedir()}/.${runtimes.__root}.json`
-
-        if (fs.existsSync(dotFile)) {
-          const config = require(dotFile)
-          cwd = config.cwd
-        }
-        else {
-          const dotFile = require('./components/dotfile')
-          cwd = await dotFile(runtimes).catch(e => {
-            if (e) {
-              console.error("There was an error while creating the dot file :")
-              console.error(e)
-            } else {
-              console.error("The path you entered does not seem to exist. Exiting...")
-            }
-            process.exit(1)
-          })
-        }
-      }
-      else {
-        cwd = runtimes.__cwd
-      }
-    }
+    const dotFile = require('./components/dotfile')
+    const cwd = await dotFile(runtimes)
 
     // Interprets the arguments and returns an array of shell commands
     const commands = parser(process.argv.splice(2))
