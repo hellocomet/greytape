@@ -20,7 +20,7 @@ const dotFile = async runtimes => {
         await new Promise((resolve, reject) => {
           prompts.question(`Please enter the working directory for application ${root} : `, path => {
             if (fs.existsSync(path)) {
-              fs.writeFile(dotFilePath, JSON.stringify({ cwd: path }), err => {
+              fs.writeFile(dotFile, JSON.stringify({ cwd: path }), err => {
                 if (err) {
                   reject(err)
                 }

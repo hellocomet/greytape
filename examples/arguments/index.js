@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const greytape = require('greytape')
+const greytape = require('../../src')
 
 const config = {
   container: {

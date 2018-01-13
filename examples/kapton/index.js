@@ -3,6 +3,6 @@
 const config = require('./config')
 const commands = require('./commands')(config)
 
-const greytape = require('greytape')
+const greytape = require('../../src')
 
 greytape(commands)
