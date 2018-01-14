@@ -7,7 +7,7 @@ const run = (commands, cwd) => commands.map(command => {
   const args = command.split(" ").splice(1)
 
   // We spawn them synchronously to ensure commands are called one after the other
-  spawnSync(bin, args, { stdio: "inherit", cwd, shell: true })
+  return spawnSync(bin, args, { stdio: "inherit", cwd, shell: true })
 })
 
 module.exports = run
