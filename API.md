@@ -41,6 +41,10 @@ Please enter the working directory for application testcli : /home/damso/dev
 {"cwd":"/home/damso/dev"}
 ```
 
+#### __debug
+
+If `true`, then greytape will always log each command in the console before executing it.
+
 #### ___core
 
 The `__core` block is special: it contains the "root" commands of your application. These commands can be reached directly without a prefix.
