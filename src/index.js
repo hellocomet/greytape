@@ -4,11 +4,11 @@ const fs = require('fs')
 const os = require('os')
 
 const documenter = require('./components/documenter')
+const parser = require('./components/parser')
+const composer = require('./components/composer')
 const runner = require('./components/runner')
 
 const greytape = async runtimes => {
-  const parser = require('./components/parser')(runtimes)
-
   if (
     process.argv.length <= 2
     || process.argv[2] === 'help'
@@ -24,14 +24,15 @@ const greytape = async runtimes => {
     const dotFile = require('./components/dotfile')
     const cwd = await dotFile(runtimes)
 
-    // Interprets the arguments and returns an array of shell commands
-    const commands = parser(process.argv.splice(2))
+    // Interpret the arguments and return a single runtime and its arguments
+    const { runtime, args } = parser(runtimes, process.argv.splice(2))
+    // Compose the actual shell commands
+    const commands = composer(runtime, args)
     // Execute shell commands
-    const results = runner(commands, cwd)
-    const failed = results.filter(result => result.status !== 0)
+    const result = runner(commands, cwd, runtimes.__debug)
 
-    // The process's return code is the number of failed commands
-    process.exit(failed.length)
+    // The process returns exits with the same status as the last executed command
+    process.exit(result)
   }
 }
 
