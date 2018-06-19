@@ -1,17 +1,24 @@
 
-const { spawnSync } = require('child_process')
+const { spawn } = require('child_process')
 
 // Loop on commands and spawn a process for each one, inheriting stdio
-const run = (commands, cwd, debug) => {
+const run = async (commands, cwd, debug) => {
+  const spawner = (bin, args) => {
+    return new Promise((resolve, reject) => {
+      const process = spawn(bin, args, { stdio: "inherit", cwd, shell: true })
+  
+      process.on('close', code => {
+        if (code !== 0) { reject(code) }
+        else { resolve(0) }
+      })
+    })
+  }
+
   for (let command of commands) {
     const bin = command.split(" ").shift()
     const args = command.split(" ").splice(1)
     if (debug) { console.log(command) }
-    const result = spawnSync(bin, args, { stdio: ["inherit", "inherit", "inherit"], cwd, shell: true })
-    if (result.status !== 0) {
-      // If a command fails, break the loop and return with its status code
-      return result.status
-    }
+    await spawner(bin, args, cwd)
   }
 
   // No command has failed, return with 0
@@ -19,3 +26,5 @@ const run = (commands, cwd, debug) => {
 }
 
 module.exports = run
+
+// [process.stdin, process.stdout, process.stderr]

@@ -10,7 +10,7 @@ const document = runtimes => {
           ? runtime.options.map(option => `[${option}]`).join(" ")
           : ""
         const hint = runtime.alias
-          ? `(alias de ${runtime.alias.split(":")[1]})`
+          ? `(alias de ${runtime.alias})`
           : runtime.hint || "No documentation available"
   
         const executable = domain
@@ -34,15 +34,15 @@ const document = runtimes => {
     documentBlock(runtimes.__core)
   }
 
-  const ignoredKeys = ['__core', '__root', '__cwd']
+  const ignoredKeys = ['__core', '__root', '__cwd', '__debug']
 
   // Document all other domains
-  Object.keys(runtimes).forEach(
+  Object.keys(runtimes)
+  .filter(domain => !ignoredKeys.includes(domain))
+  .forEach(
     domain => {
-      if (ignoredKeys.indexOf(domain) === -1) {
-        console.log(`- ${domain} commands`)
-        documentBlock(runtimes[domain], domain)
-      }
+      console.log(`- ${domain} commands`)
+      documentBlock(runtimes[domain], domain)
     }
   )
 }

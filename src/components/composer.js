@@ -50,7 +50,7 @@
 
       if (runtime.inContainer) {
         const container = runtime.inContainer
-        commands = commands.map(command => `docker exec -it ${container} /bin/bash -c ${command}`)
+        commands = commands.map(command => `docker exec -it ${container} /bin/bash -c '${command}'`)
       }
 
       return commands

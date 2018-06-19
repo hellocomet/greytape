@@ -29,9 +29,22 @@ const parse = (runtimes, cliArgs) => {
       ? cliArgs.slice(2)
       : cliArgs.slice(1)
 
-    const runtime = domain[command]
+    // If the command is an alias, resolve it
+    const { alias } = domain[command]
+    if (alias) {
+      const [ aliasDomain, aliasCommand ] = alias.split(':').length > 1
+        ? alias.split(':')
+        : [ '__core', alias ]
 
-    return { runtime, args }
+      if (!runtimes[aliasDomain][aliasCommand]) {
+        console.error(`${alias} is not a valid alias`)
+        process.exit(1)
+      }
+
+      return { runtime: runtimes[aliasDomain][aliasCommand], args }
+    }
+
+    return { runtime: domain[command], args }
 }
 
 module.exports = parse

@@ -29,10 +29,12 @@ const greytape = async runtimes => {
     // Compose the actual shell commands
     const commands = composer(runtime, args)
     // Execute shell commands
-    const result = runner(commands, cwd, runtimes.__debug)
+    const result = await runner(commands, cwd, runtimes.__debug).catch(status => {
+      process.exit(status)
+    })
 
     // The process returns exits with the same status as the last executed command
-    process.exit(result)
+    process.exit(0)
   }
 }
 
